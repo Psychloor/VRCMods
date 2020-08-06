@@ -9,4 +9,9 @@
     <ItemGroup>
         <EmbeddedResource Include="modui.assetbundle" />
     </ItemGroup>
+    <ItemGroup>
+      <Reference Update="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Private>true</Private>
+      </Reference>
+    </ItemGroup>
 </Project>

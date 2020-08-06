@@ -11,8 +11,8 @@ using UnityEngine.UI;
 using VRCSDK2;
 using Object = UnityEngine.Object;
 
-[assembly:MelonModInfo(typeof(UiExpansionKitMod), "UI Expansion Kit", "0.1.3", "knah", "https://github.com/knah/VRCMods")]
-[assembly:MelonModGame("VRChat", "VRChat")]
+[assembly:MelonInfo(typeof(UiExpansionKitMod), "UI Expansion Kit", "0.1.4", "knah/Psy", "https://github.com/knah/VRCMods")]
+[assembly:MelonGame("VRChat", "VRChat")]
 
 namespace UIExpansionKit
 {
@@ -83,12 +83,15 @@ namespace UIExpansionKit
             
             {
                 using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("UIExpansionKit.modui.assetbundle");
-                using var memStream = new MemoryStream((int) stream.Length);
-                stream.CopyTo(memStream);
-                var assetBundle = AssetBundle.LoadFromMemory_Internal(memStream.ToArray(), 0);
-                assetBundle.hideFlags |= HideFlags.DontUnloadUnusedAsset;
+                if (stream != null)
+                {
+                    using var memStream = new MemoryStream((int) stream.Length);
+                    stream.CopyTo(memStream);
+                    var assetBundle = AssetBundle.LoadFromMemory_Internal(memStream.ToArray(), 0);
+                    assetBundle.hideFlags |= HideFlags.DontUnloadUnusedAsset;
                 
-                myStuffBundle = new PreloadedBundleContents(assetBundle);
+                    myStuffBundle = new PreloadedBundleContents(assetBundle);
+                }
             }
             
             // attach it to QuickMenu. VRChat changes render queue on QM contents on world load that makes it render properly
@@ -107,7 +110,7 @@ namespace UIExpansionKit
                     }
                     catch (Exception ex)
                     {
-                        MelonModLogger.LogError(
+                        MelonLogger.LogError(
                             $"Error while waiting for init of coroutine with type {coroutine.GetType().FullName}: {ex.ToString()}");
                     }
                     yield return coroutine.Current;
@@ -120,7 +123,7 @@ namespace UIExpansionKit
 
         private void DecorateMenuPages()
         {
-            MelonModLogger.Log($"Decorating menus");
+            MelonLogger.Log($"Decorating menus");
             
             var quickMenuExpandoPrefab = myStuffBundle.QuickMenuExpando;
             var quickMenuRoot = QuickMenu.prop_QuickMenu_0.gameObject;
@@ -137,7 +140,7 @@ namespace UIExpansionKit
                 var gameObject = GameObject.Find(gameObjectPath);
                 if (gameObject == null)
                 {
-                    MelonModLogger.LogError($"GameObject at path {gameObjectPath} for category {categoryEnum} was not found, not decorating");
+                    MelonLogger.LogError($"GameObject at path {gameObjectPath} for category {categoryEnum} was not found, not decorating");
                     continue;
                 }
 
@@ -237,7 +240,7 @@ namespace UIExpansionKit
             myVisibilityTransfers.Add((fullMenuRoot.transform.Find("Screens/Settings").gameObject, myModSettingsExpando));
             myHasContents[myModSettingsExpando] = true;
 
-            myModSettingsExpandoTransform.Find("Content/ApplyButton").GetComponent<Button>().onClick.AddListener(new Action(ModPrefs.SaveConfig));
+            myModSettingsExpandoTransform.Find("Content/ApplyButton").GetComponent<Button>().onClick.AddListener(new Action(MelonPrefs.SaveConfig));
 
             myModSettingsExpandoTransform.Find("Content/RefreshButton").GetComponent<Button>().onClick
                 .AddListener(new Action(() => MelonCoroutines.Start(ModSettingsHandler.PopulateSettingsPanel(settingsContentRoot))));
@@ -288,17 +291,17 @@ namespace UIExpansionKit
             
             foreach (var (category, name) in ExpansionKitSettings.ListPinnedPrefs(false))
             {
-                if (!ModPrefs.GetPrefs().TryGetValue(category, out var categoryMap)) continue;
+                if (!MelonPrefs.GetPreferences().TryGetValue(category, out var categoryMap)) continue;
                 if (!categoryMap.TryGetValue(name, out var prefDesc)) continue;
 
                 var toggleButton = Object.Instantiate(toggleButtonPrefab, expandoRoot, false);
                 toggleButton.GetComponentInChildren<Text>().text = prefDesc.DisplayText ?? name;
                 var toggle = toggleButton.GetComponent<Toggle>();
-                toggle.isOn = ModPrefs.GetBool(category, name);
+                toggle.isOn = MelonPrefs.GetBool(category, name);
                 toggle.onValueChanged.AddListener(new Action<bool>(isOn =>
                 {
                     prefDesc.ValueEdited = isOn.ToString().ToLowerInvariant();
-                    ModPrefs.SaveConfig();
+                    MelonPrefs.SaveConfig();
                 }));
                 
                 myHasContents[expando] = true;
